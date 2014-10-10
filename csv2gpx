@@ -1,0 +1,83 @@
+#!/bin/bash
+#csv2gpx -- convert csv-file with geo-coordinates to gpx-files
+# 
+# Author: Marcel Dümmel <marcel.duemmel@aquasign.net>
+#
+# CSV-Fileformat:
+#
+#   - Comma separated
+#   - first Line contains headers (may be any text the user likes)
+#   - columns
+#              1. Unique name of the coordinate
+#              2. a catheogory for the coordinate
+#              3. latitude in decimal
+#              4. longitude in decimal
+
+
+function usage()
+{
+	echo "usage: `basename $0` <filename>"
+	echo "Generates GPX-files from coordinates given in a CSV-file."
+	echo "<filename> has to be the name of a csv-file."
+	
+	
+}
+
+function generate_gpx()
+{
+	local co_name=$1
+	local co_kat=$2
+	local co_lat=$3
+	local co_lon=$4
+
+	cat <<EOF
+<?xml version="1.0"?>
+<gpx version="1.0" creator="csv2gpx"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xmlns="http://www.topografix.com/GPX/1/0"
+xsi:schemaLocation="http://www.topografix.com/GPX/1/0 http://www.topografix.com/GPX/1/0/gpx.xsd">
+<wpt lat="${co_lat}" lon="${co_lon}">
+  <name>${co_name}</name>
+  <cmt>${co_kat}</cmt>
+  <desc>${co_name}</desc>
+  <sym>residence</sym>
+</wpt>
+</gpx>
+
+EOF
+}
+
+
+
+if [ "$#" -eq 0 ]
+then
+	usage
+	exit 1
+fi
+
+
+filename=$1
+oldifs=$IFS
+IFS=,
+i=0
+
+while read co_name co_kat co_lat co_lon
+do
+	i=`expr $i + 1`
+	if [ $i -eq 1 ]
+	then
+		continue
+	fi
+
+	if [ "$co_name" == "" ]
+	then
+		continue
+	fi
+	
+	gpxstring=$(generate_gpx $co_name $co_kat $co_lat $co_lon )
+	outfile="$co_name.gpx"
+	echo "$gpxstring" > $outfile 
+done < $filename
+
+IFS=$oldifs
+
